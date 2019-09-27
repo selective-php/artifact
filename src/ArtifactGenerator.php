@@ -109,7 +109,7 @@ final class ArtifactGenerator
      *
      * @return void
      */
-    public function generateArtifact()
+    public function buildArtifact()
     {
         $currentDir = (string)getcwd();
         $baseDir = (string)realpath(__DIR__ . '/..');

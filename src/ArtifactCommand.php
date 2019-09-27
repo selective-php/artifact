@@ -20,7 +20,8 @@ class ArtifactCommand extends Command
     protected function configure()
     {
         $this->setName('artifact')->setDescription('An artifact generator for deployments.');
-        $this->addOption('build', null, InputOption::VALUE_NONE, 'Build the artifact.');
+        $this->addOption('build', null, InputOption::VALUE_REQUIRED, 'Build the artifact.');
+
     }
 
     /**
@@ -38,8 +39,8 @@ class ArtifactCommand extends Command
         $filesystem = new ArtifactFilesystem();
         $generator = new ArtifactGenerator($input, $output, $filesystem);
 
-        if ($input->getOption('perform')) {
-            $generator->generateArtifact();
+        if ($input->hasOption('build')) {
+            $generator->buildArtifact();
         }
 
         return 0;

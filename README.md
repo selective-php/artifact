@@ -20,12 +20,12 @@ A artifact generator for PHP.
 composer require selective/artifact
 ```
 
-Add this script to composer.json
+Optional: Add this script to your `composer.json` file:
 
 ```json
 {
     "scripts": {
-        "build": "artifact build"
+        "build": "artifact --build"
     }
 }
 ```
@@ -33,6 +33,12 @@ Add this script to composer.json
 ## Usage
 
 To generate the artifact (zip file) for deployment, run:
+
+```bash
+vendor/bin/artifact --build
+```
+
+Can can also use composer:
 
 ```bash
 composer build
