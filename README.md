@@ -22,7 +22,7 @@ composer require selective/artifact
 
 ## Usage
 
-Execute the vendored script:
+To generate the artifact (zip file) for deployment, run:
 
 ```php
 composer exec artifact perform
