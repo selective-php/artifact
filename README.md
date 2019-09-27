@@ -20,14 +20,18 @@ A artifact generator for PHP.
 composer require selective/artifact
 ```
 
-Run:
+## Usage
+
+Execute the vendored script:
 
 ```php
-composer artifact
+composer exec artifact perform
 ```
 
-```php
-composer artifact perform
+## Testing
+
+```bash
+composer test
 ```
 
 ## License

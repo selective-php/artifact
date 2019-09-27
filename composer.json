@@ -4,7 +4,13 @@
     "description": "Artifact builder",
     "keywords": [
         "artifact",
-        "generator"
+        "deployment",
+        "deploy",
+        "deployer",
+        "continuous",
+        "continuous-delivery",
+        "continuous-deployment",
+        "continuous-integration"
     ],
     "homepage": "https://github.com/selective-php/artifact",
     "license": "MIT",
@@ -47,6 +53,9 @@
             "Selective\\Artifact\\Test\\": "tests"
         }
     },
+    "bin": [
+        "./bin/artifact"
+    ],
     "config": {
         "sort-packages": true
     }
