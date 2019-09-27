@@ -19,8 +19,8 @@ class ArtifactCommand extends Command
      */
     protected function configure()
     {
-        $this->setName('artifact')->setDescription('Free up some space from your installed Composer packages.');
-        $this->addOption('perform', null, InputOption::VALUE_NONE, 'Perform the actual deletion of files.');
+        $this->setName('artifact')->setDescription('An artifact generator for deployments.');
+        $this->addOption('build', null, InputOption::VALUE_NONE, 'Build the artifact.');
     }
 
     /**

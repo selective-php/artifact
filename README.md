@@ -16,17 +16,29 @@ A artifact generator for PHP.
 
 ## Installation
 
-```
+```bash
 composer require selective/artifact
+```
+
+Add this script to composer.json
+
+```json
+{
+    "scripts": {
+        "build": "artifact build"
+    }
+}
 ```
 
 ## Usage
 
 To generate the artifact (zip file) for deployment, run:
 
-```php
-composer exec artifact perform
+```bash
+composer build
 ```
+
+The generated artifact will be stored in the `build/` directory.
 
 ## Testing
 
