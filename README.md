@@ -1,6 +1,6 @@
 # selective/artifact
 
-A artifact generator for PHP.
+An artifact builder for PHP.
 
 [![Latest Version on Packagist](https://img.shields.io/github/release/selective-php/artifact.svg?style=flat-square)](https://packagist.org/packages/selective/artifact)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
@@ -38,7 +38,7 @@ To generate the artifact (zip file) for deployment, run:
 vendor/bin/artifact --build
 ```
 
-Can can also use composer:
+You may also use composer:
 
 ```bash
 composer build

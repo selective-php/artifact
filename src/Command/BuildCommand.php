@@ -1,16 +1,18 @@
 <?php
 
-namespace Selective\Artifact;
+namespace Selective\Artifact\Command;
 
+use Selective\Artifact\Builder\ArtifactBuilder;
+use Selective\Artifact\Builder\ArtifactFilesystem;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Artifact Command.
+ * Build Command.
  */
-class ArtifactCommand extends Command
+class BuildCommand extends Command
 {
     /**
      * Configure.
@@ -19,9 +21,10 @@ class ArtifactCommand extends Command
      */
     protected function configure()
     {
-        $this->setName('artifact')->setDescription('An artifact generator for deployments.');
-        $this->addOption('build', null, InputOption::VALUE_REQUIRED, 'Build the artifact.');
+        $this->setDescription('Artifact Generator');
 
+        $this->setName('build')->setDescription('Build the artifact');
+        $this->addOption('test', null, InputOption::VALUE_NONE);
     }
 
     /**
@@ -37,9 +40,11 @@ class ArtifactCommand extends Command
         $this->printApplicationTitle($output);
 
         $filesystem = new ArtifactFilesystem();
-        $generator = new ArtifactGenerator($input, $output, $filesystem);
+        $generator = new ArtifactBuilder($input, $output, $filesystem);
 
-        if ($input->hasOption('build')) {
+        if ($input->getOption('test')) {
+            $output->writeln('Testmode');
+        } else {
             $generator->buildArtifact();
         }
 

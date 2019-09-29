@@ -1,14 +1,15 @@
 <?php
 
-namespace Selective\Artifact;
+namespace Selective\Artifact\Builder;
 
+use RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Artifact Generator.
  */
-final class ArtifactGenerator
+final class ArtifactBuilder
 {
     /**
      * @var InputInterface
@@ -111,24 +112,23 @@ final class ArtifactGenerator
      */
     public function buildArtifact()
     {
-        $currentDir = (string)getcwd();
-        $baseDir = (string)realpath(__DIR__ . '/..');
-        $buildDir = sprintf('%s/build', $baseDir);
-        $masterDir = sprintf('%s/master', $buildDir);
-        $zipFile = sprintf('%s/my_app_%s.zip', $buildDir, date('YmdHis'));
+        $currentDir = $this->filesystem->normalizePath(getcwd());
+        $baseDir = $this->filesystem->normalizePath($currentDir);
+        $buildDir = $this->filesystem->normalizePath(sprintf('%s/build', $baseDir));
+        $masterDir = $this->filesystem->normalizePath(sprintf('%s/master', $buildDir));
+        $zipFile = $this->filesystem->normalizePath(sprintf('%s/my_app_%s.zip', $buildDir, date('YmdHis')));
+        $masterZip = "$buildDir/master.zip";
 
-        $this->output->writeln(sprintf('<info>current directory</info> %s', $currentDir));
-        $this->output->writeln(sprintf('<info>using base directory</info> %s', $baseDir));
-        $this->output->writeln(sprintf('<info>using build directory</info> %s', $buildDir));
-        $this->output->writeln(sprintf('<info>using master directory</info> %s', $masterDir));
-        $this->output->writeln(sprintf('<info>using zip file</info> %s', $zipFile));
+        $this->filesystem->createDirectory($buildDir);
+        $this->filesystem->createDirectory($buildDir);
+        $this->filesystem->createDirectory($masterDir);
+
+        $this->output->writeln(sprintf('<info>Base directory</info> %s', $baseDir));
+        $this->output->writeln(sprintf('<info>Build directory</info> %s', $buildDir));
+        $this->output->writeln(sprintf('<info>Master directory</info> %s', $masterDir));
+        $this->output->writeln(sprintf('<info>Artifact file</info> %s', $zipFile));
 
         chdir($baseDir);
-
-        if (!file_exists($masterDir)) {
-            $this->output->writeln("Create: $masterDir");
-            mkdir($masterDir, 0777, true);
-        }
 
         //  Get composer.phar
         $composerPhar = sprintf('%s/composer.phar', $buildDir);
@@ -144,30 +144,39 @@ final class ArtifactGenerator
         $this->filesystem->rrmdir($masterDir);
 
         $this->output->writeln('Get master branch from git repository');
-        exec("git archive --format zip --output $buildDir/master.zip master");
+        exec("git archive --format zip --output $masterZip master", $tmp, $status);
+        if ($status > 0) {
+            throw new RuntimeException(sprintf('Download of the master branch failed. Error code: %s', $status));
+        }
+
+        if (!file_exists($masterZip)) {
+            throw new RuntimeException(sprintf('File not found: %s', $masterZip));
+        }
 
         $this->output->writeln('Unzip master branch');
-        $this->filesystem->unzip("$buildDir/master.zip", $masterDir);
-
-        $this->output->writeln('Delete master.zip');
-        unlink("$buildDir/master.zip");
+        $this->filesystem->unzip($masterZip, $masterDir);
 
         $this->output->writeln('Install composer packages');
-        exec("php $buildDir/composer.phar install --no-dev --optimize-autoloader -d $masterDir");
+        exec("php $buildDir/composer.phar install --no-dev --optimize-autoloader -d $masterDir", $tmp, $status);
 
-        $this->output->writeln("Remove files which aren't needed on the server");
+        if ($status > 0) {
+            throw new RuntimeException(sprintf('The composer package installation failed. Error code: %s', $status));
+        }
+
+        $this->output->writeln('Delete master.zip');
+        $this->filesystem->unlink($masterZip);
+
+        $this->output->writeln('Removing unnecessary files');
         $this->filesystem->deleteFileset($masterDir, $this->fileset);
 
         // Zip master brunch
         $this->output->writeln("Create zip file: $zipFile");
 
-        if (file_exists($zipFile)) {
-            unlink($zipFile);
-        }
-
         $this->filesystem->zipDirectory($zipFile, $masterDir);
 
-        $this->output->writeln('Done');
+        $this->filesystem->rrmdir($masterDir);
+
+        $this->output->writeln('<fg=green>Done</>');
 
         chdir($currentDir);
     }

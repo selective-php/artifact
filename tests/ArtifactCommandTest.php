@@ -3,12 +3,11 @@
 namespace Selective\Artifact\Test;
 
 use PHPUnit\Framework\TestCase;
-use Selective\Artifact\ArtifactCommand;
-use Symfony\Component\Console\Application;
+use Selective\Artifact\Application\ArtifactApplication;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * @coversDefaultClass \Odan\Migration\Command\GenerateCommand
+ * Test.
  */
 class ArtifactCommandTest extends TestCase
 {
@@ -17,15 +16,21 @@ class ArtifactCommandTest extends TestCase
      */
     public function testArtifact()
     {
-        $application = new Application();
-        $application->add(new ArtifactCommand());
+        chdir(__DIR__ . '/..');
 
-        $command = $application->find('artifact');
+        $application = new ArtifactApplication();
+
+        $command = $application->find('build');
         $commandTester = new CommandTester($command);
-        $commandTester->execute(['command' => $command->getName()]);
+
+        $commandTester->execute([
+            'command' => $command->getName(),
+            '--test' => true,
+        ]);
 
         $display = $commandTester->getDisplay();
         $this->assertContains('Artifact Generator', $display);
-        $this->assertNotContains('using', $display);
+        $this->assertContains('Testmode', $display);
+        $this->assertNotContains('Done', $display);
     }
 }

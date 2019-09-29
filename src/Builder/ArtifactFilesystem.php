@@ -1,6 +1,6 @@
 <?php
 
-namespace Selective\Artifact;
+namespace Selective\Artifact\Builder;
 
 use DirectoryIterator;
 use FilesystemIterator;
@@ -15,6 +15,11 @@ use ZipArchive;
  */
 class ArtifactFilesystem
 {
+    public function normalizePath(string $path): string
+    {
+        return (string)str_replace('\\', '/', $path);
+    }
+
     /**
      * @param string $dir
      * @param array $patterns
@@ -139,5 +144,26 @@ class ArtifactFilesystem
         }
 
         return rmdir($path);
+    }
+
+    public function createDirectory(string $path)
+    {
+        if (is_dir($path)) {
+            return;
+        }
+        if (!mkdir($path, 0777, true) && !is_dir($path)) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
+        }
+    }
+
+    public function unlink(string $filename)
+    {
+        if (!file_exists($filename)) {
+            return true;
+        }
+
+        if (!unlink($filename)) {
+            throw new RuntimeException(sprintf('Unlink failed: %s', $filename));
+        }
     }
 }
