@@ -42,7 +42,8 @@ class BuildCommand extends Command
 
         $filesystem = new ArtifactFilesystem();
         $generator = new ArtifactBuilder($output, $filesystem);
-        $name = (string)$input->getOption('name');
+        $name = $input->getOption('name');
+        $name = is_string($name) ? $name : '';
 
         if ($input->getOption('test')) {
             $output->writeln('Test mode');
