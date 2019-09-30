@@ -17,7 +17,7 @@ An artifact builder for PHP.
 ## Installation
 
 ```bash
-composer require selective/artifact
+composer require selective/artifact --dev
 ```
 
 Optional: Add this script to your `composer.json` file:
