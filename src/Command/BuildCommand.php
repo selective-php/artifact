@@ -30,20 +30,20 @@ class BuildCommand extends Command
     /**
      * Execute command.
      *
-     * @param InputInterface $input
-     * @param OutputInterface $output
+     * @param InputInterface $input The console input
+     * @param OutputInterface $output The console output
      *
-     * @return int A 0 on success, or an error code
+     * @return int The error level, 0 on success, or an error code
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->printApplicationTitle($output);
 
         $filesystem = new ArtifactFilesystem();
-        $generator = new ArtifactBuilder($input, $output, $filesystem);
+        $generator = new ArtifactBuilder($output, $filesystem);
 
         if ($input->getOption('test')) {
-            $output->writeln('Testmode');
+            $output->writeln('Test mode');
         } else {
             $generator->buildArtifact();
         }
@@ -54,7 +54,7 @@ class BuildCommand extends Command
     /**
      * Print application name.
      *
-     * @param OutputInterface $output
+     * @param OutputInterface $output The console output
      *
      * @return void
      */

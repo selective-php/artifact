@@ -3,7 +3,6 @@
 namespace Selective\Artifact\Builder;
 
 use RuntimeException;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -11,11 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 final class ArtifactBuilder
 {
-    /**
-     * @var InputInterface
-     */
-    private $input;
-
     /**
      * @var OutputInterface
      */
@@ -91,16 +85,13 @@ final class ArtifactBuilder
     /**
      * The constructor.
      *
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     * @param ArtifactFilesystem $filesystem
+     * @param OutputInterface $output The output
+     * @param ArtifactFilesystem $filesystem The filesystem
      */
     public function __construct(
-        InputInterface $input,
         OutputInterface $output,
         ArtifactFilesystem $filesystem
     ) {
-        $this->input = $input;
         $this->output = $output;
         $this->filesystem = $filesystem;
     }
@@ -108,11 +99,13 @@ final class ArtifactBuilder
     /**
      * Generate artifact file.
      *
+     * @throws RuntimeException
+     *
      * @return void
      */
     public function buildArtifact()
     {
-        $currentDir = $this->filesystem->normalizePath(getcwd());
+        $currentDir = $this->filesystem->normalizePath((string)getcwd());
         $baseDir = $this->filesystem->normalizePath($currentDir);
         $buildDir = $this->filesystem->normalizePath(sprintf('%s/build', $baseDir));
         $masterDir = $this->filesystem->normalizePath(sprintf('%s/master', $buildDir));
@@ -130,7 +123,7 @@ final class ArtifactBuilder
 
         chdir($baseDir);
 
-        //  Get composer.phar
+        // Get composer.phar
         $composerPhar = sprintf('%s/composer.phar', $buildDir);
 
         if (file_exists($composerPhar)) {
@@ -141,10 +134,11 @@ final class ArtifactBuilder
         }
 
         $this->output->writeln("Delete build/master: $masterDir");
-        $this->filesystem->rrmdir($masterDir);
+        $this->filesystem->removeDirectory($masterDir);
 
         $this->output->writeln('Get master branch from git repository');
-        exec("git archive --format zip --output $masterZip master", $tmp, $status);
+        exec("git archive --format zip --output $masterZip master", $output, $status);
+
         if ($status > 0) {
             throw new RuntimeException(sprintf('Download of the master branch failed. Error code: %s', $status));
         }
@@ -157,14 +151,14 @@ final class ArtifactBuilder
         $this->filesystem->unzip($masterZip, $masterDir);
 
         $this->output->writeln('Install composer packages');
-        exec("php $buildDir/composer.phar install --no-dev --optimize-autoloader -d $masterDir", $tmp, $status);
+        exec("php $buildDir/composer.phar install --no-dev --optimize-autoloader -d $masterDir", $output, $status);
 
         if ($status > 0) {
             throw new RuntimeException(sprintf('The composer package installation failed. Error code: %s', $status));
         }
 
         $this->output->writeln('Delete master.zip');
-        $this->filesystem->unlink($masterZip);
+        $this->filesystem->deleteFile($masterZip);
 
         $this->output->writeln('Removing unnecessary files');
         $this->filesystem->deleteFileset($masterDir, $this->fileset);
@@ -172,9 +166,9 @@ final class ArtifactBuilder
         // Zip master brunch
         $this->output->writeln("Create zip file: $zipFile");
 
-        $this->filesystem->zipDirectory($zipFile, $masterDir);
+        $this->filesystem->zipDirectory($masterDir, $zipFile);
 
-        $this->filesystem->rrmdir($masterDir);
+        $this->filesystem->removeDirectory($masterDir);
 
         $this->output->writeln('<fg=green>Done</>');
 

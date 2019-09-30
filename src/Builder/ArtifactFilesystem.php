@@ -15,43 +15,85 @@ use ZipArchive;
  */
 class ArtifactFilesystem
 {
+    /**
+     * Normalize path.
+     *
+     * @param string $path The path
+     *
+     * @return string The normalized path
+     */
     public function normalizePath(string $path): string
     {
         return (string)str_replace('\\', '/', $path);
     }
 
     /**
-     * @param string $dir
-     * @param array $patterns
+     * Delete files and directories by search patterns.
+     *
+     * @param string $path The start path
+     * @param array $patterns The regex search patterns
+     *
+     * @return void
      */
-    public function deleteFileset(string $dir, array $patterns)
+    public function deleteFileset(string $path, array $patterns)
     {
-        $files = $this->getDirContents($dir);
+        $files = $this->listDirectoryRecursive($path);
 
-        foreach ($files as $i => $file) {
-            $relativeFile = substr($file, strlen($dir) + 1);
-            //echo "File: " . $relativeFile . "\n";
-
-            foreach ($patterns as $pattern) {
-                if (preg_match('/' . $pattern . '/', $relativeFile)) {
-                    if (is_file($file)) {
-                        //echo "Delete file: " . $file . "\n";
-                        unlink($file);
-                    }
-                    if (is_dir($file)) {
-                        //echo "Delete directory: " . $file . "\n";
-                        $this->rrmdir($file);
-                    }
-                }
-            }
+        foreach ($files as $file) {
+            $this->deleteByPattern($path, $file, $patterns);
         }
     }
 
-    public function getDirContents(string $path): array
+    /**
+     * Delete file or directory.
+     *
+     * @param string $path The path
+     * @param string $file The file or path
+     * @param array $patterns The patterns
+     *
+     * @return void
+     */
+    private function deleteByPattern(string $path, string $file, array $patterns)
     {
-        $path = str_replace('\\', '/', $path);
+        $relativeFile = substr($file, strlen($path) + 1);
 
-        $rii = new RecursiveIteratorIterator(
+        foreach ($patterns as $pattern) {
+            if (!preg_match('/' . $pattern . '/', $relativeFile)) {
+                continue;
+            }
+            $this->deleteFileOrDirectory($file);
+        }
+    }
+
+    /**
+     * Delete file or directory.
+     *
+     * @param string $file The file or path
+     *
+     * @return void
+     */
+    private function deleteFileOrDirectory(string $file)
+    {
+        if (is_file($file)) {
+            unlink($file);
+        }
+        if (is_dir($file)) {
+            $this->removeDirectory($file);
+        }
+    }
+
+    /**
+     * Find files and directories.
+     *
+     * @param string $path The source path
+     *
+     * @return array The files
+     */
+    public function listDirectoryRecursive(string $path): array
+    {
+        $path = $this->normalizePath($path);
+
+        $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator(
                 $path,
                 FilesystemIterator::KEY_AS_PATHNAME |
@@ -63,19 +105,28 @@ class ArtifactFilesystem
         $files = [];
 
         /** @var SplFileInfo|DirectoryIterator $file */
-        foreach ($rii as $file) {
+        foreach ($iterator as $file) {
             if ($file->isDir() || ($file instanceof DirectoryIterator && $file->isDot())) {
-                $files[] = (string)str_replace('\\', '/', (string)$file->getPath());
+                $files[] = $this->normalizePath($file->getPath());
+                continue;
             }
-            if ($file->isFile()) {
-                $files[] = (string)str_replace('\\', '/', (string)$file->getRealPath());
+            if ($file->isFile() && $file->getRealPath() !== false) {
+                $files[] = $this->normalizePath($file->getRealPath());
             }
         }
 
         return $files;
     }
 
-    public function zipDirectory(string $zipFile, string $path)
+    /**
+     * Zip directory.
+     *
+     * @param string $path The path to zip
+     * @param string $zipFile The destination ZIP file
+     *
+     * @return void
+     */
+    public function zipDirectory(string $path, string $zipFile)
     {
         $zip = new ZipArchive();
         $zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
@@ -92,9 +143,20 @@ class ArtifactFilesystem
 
             $zip->addFile($filePath, $relativePath);
         }
+
         $zip->close();
     }
 
+    /**
+     * Unzip file.
+     *
+     * @param string $zipFile The source zip file
+     * @param string $destination The destination path
+     *
+     * @throws RuntimeException
+     *
+     * @return void
+     */
     public function unzip(string $zipFile, string $destination)
     {
         $zip = new ZipArchive();
@@ -102,28 +164,23 @@ class ArtifactFilesystem
             $zip->extractTo($destination);
             $zip->close();
         } else {
-            throw new RuntimeException('Unzip failed');
+            throw new RuntimeException(sprintf('Unzip failed: %s', $zipFile));
         }
-    }
-
-    public function removeFile(string $file)
-    {
-        if (!file_exists($file)) {
-            return true;
-        }
-        unlink($file);
     }
 
     /**
      * Remove directory recursively.
+     *
      * This function is compatible with vfsStream.
      *
      * @param string $path The path
      *
      * @return bool true on success or false on failure
      */
-    public function rrmdir(string $path): bool
+    public function removeDirectory(string $path): bool
     {
+        $path = $this->normalizePath($path);
+
         if (!file_exists($path)) {
             return true;
         }
@@ -134,8 +191,9 @@ class ArtifactFilesystem
             if ($fileInfo->isDot() || !$fileInfo->isDir()) {
                 continue;
             }
-            $this->rrmdir($fileInfo->getPathname());
+            $this->removeDirectory($fileInfo->getPathname());
         }
+
         $files = new FilesystemIterator($path);
 
         /** @var SplFileInfo $file */
@@ -146,24 +204,43 @@ class ArtifactFilesystem
         return rmdir($path);
     }
 
+    /**
+     * Create new directory.
+     *
+     * @param string $path The path
+     *
+     * @throws RuntimeException
+     *
+     * @return void
+     */
     public function createDirectory(string $path)
     {
         if (is_dir($path)) {
             return;
         }
+
         if (!mkdir($path, 0777, true) && !is_dir($path)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $path));
         }
     }
 
-    public function unlink(string $filename)
+    /**
+     * Deletes a file.
+     *
+     * @param string $filename The file
+     *
+     * @throws RuntimeException
+     *
+     * @return void
+     */
+    public function deleteFile(string $filename)
     {
         if (!file_exists($filename)) {
-            return true;
+            return;
         }
 
         if (!unlink($filename)) {
-            throw new RuntimeException(sprintf('Unlink failed: %s', $filename));
+            throw new RuntimeException(sprintf('File could not be deleted: %s', $filename));
         }
     }
 }

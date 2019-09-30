@@ -13,6 +13,8 @@ class ArtifactCommandTest extends TestCase
 {
     /**
      * Test.
+     *
+     * @return void
      */
     public function testArtifact()
     {
@@ -30,7 +32,7 @@ class ArtifactCommandTest extends TestCase
 
         $display = $commandTester->getDisplay();
         $this->assertContains('Artifact Generator', $display);
-        $this->assertContains('Testmode', $display);
+        $this->assertContains('Test mode', $display);
         $this->assertNotContains('Done', $display);
     }
 }
