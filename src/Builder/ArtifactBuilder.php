@@ -3,6 +3,7 @@
 namespace Selective\Artifact\Builder;
 
 use RuntimeException;
+use Selective\Artifact\Utility\TextFormatter;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -99,17 +100,18 @@ final class ArtifactBuilder
     /**
      * Generate artifact file.
      *
-     * @throws RuntimeException
+     * @param string $name The artifact name
      *
      * @return void
      */
-    public function buildArtifact()
+    public function buildArtifact(string $name)
     {
+        $name = TextFormatter::underscore($name);
         $currentDir = $this->filesystem->normalizePath((string)getcwd());
         $baseDir = $this->filesystem->normalizePath($currentDir);
         $buildDir = $this->filesystem->normalizePath(sprintf('%s/build', $baseDir));
         $masterDir = $this->filesystem->normalizePath(sprintf('%s/master', $buildDir));
-        $zipFile = $this->filesystem->normalizePath(sprintf('%s/my_app_%s.zip', $buildDir, date('YmdHis')));
+        $zipFile = $this->filesystem->normalizePath(sprintf('%s/%s_%s.zip', $buildDir, $name, date('YmdHis')));
         $masterZip = "$buildDir/master.zip";
 
         $this->filesystem->createDirectory($buildDir);

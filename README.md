@@ -25,7 +25,7 @@ Optional: Add this script to your `composer.json` file:
 ```json
 {
     "scripts": {
-        "build": "artifact --build"
+        "build": "artifact build --name=my_app"
     }
 }
 ```
@@ -35,7 +35,7 @@ Optional: Add this script to your `composer.json` file:
 To generate the artifact (zip file) for deployment, run:
 
 ```bash
-vendor/bin/artifact --build
+vendor/bin/artifact build
 ```
 
 You may also use composer:
@@ -45,6 +45,18 @@ composer build
 ```
 
 The generated artifact will be stored in the `build/` directory.
+
+## Commands
+
+Command | Description
+--- | ---
+build | Build the artifact.
+
+## Parameters
+
+Parameter | Values | Default | Description
+--- | --- | --- | ---
+--name | string | app | The zip file prefix.
 
 ## Testing
 

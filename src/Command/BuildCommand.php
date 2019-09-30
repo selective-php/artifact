@@ -24,6 +24,7 @@ class BuildCommand extends Command
         $this->setDescription('Artifact Generator');
 
         $this->setName('build')->setDescription('Build the artifact');
+        $this->addOption('name', null, InputOption::VALUE_OPTIONAL, 'The zip file prefix', 'my_app');
         $this->addOption('test', null, InputOption::VALUE_NONE);
     }
 
@@ -41,11 +42,12 @@ class BuildCommand extends Command
 
         $filesystem = new ArtifactFilesystem();
         $generator = new ArtifactBuilder($output, $filesystem);
+        $name = (string)$input->getOption('name');
 
         if ($input->getOption('test')) {
             $output->writeln('Test mode');
         } else {
-            $generator->buildArtifact();
+            $generator->buildArtifact($name);
         }
 
         return 0;
