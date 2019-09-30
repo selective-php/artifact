@@ -56,7 +56,7 @@ build | Build the artifact.
 
 Parameter | Values | Default | Description
 --- | --- | --- | ---
---name | string | app | The zip file prefix.
+--name | string | my_app | The zip file prefix.
 
 ## Testing
 
