@@ -35,7 +35,7 @@ Optional: Add this script to your `composer.json` file:
 To generate the artifact (zip file) for deployment, run:
 
 ```bash
-vendor/bin/artifact build
+vendor/bin/artifact build --name=my_app
 ```
 
 You may also use composer:
