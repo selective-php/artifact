@@ -3,7 +3,7 @@
 namespace Selective\Artifact\Utility;
 
 /**
- * Text Formatter
+ * Text Formatter.
  */
 final class TextFormatter
 {

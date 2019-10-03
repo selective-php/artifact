@@ -8,7 +8,7 @@ use Symfony\Component\Console\Application;
 /**
  * Console application.
  */
-class ArtifactApplication extends Application
+final class ArtifactApplication extends Application
 {
     /**
      * Class Constructor.

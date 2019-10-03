@@ -3,6 +3,8 @@
 namespace Selective\Artifact\Builder;
 
 use RuntimeException;
+use Selective\Artifact\Compression\ZipFileInterface;
+use Selective\Artifact\Filesystem\FilesystemInterface;
 use Selective\Artifact\Utility\TextFormatter;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -17,9 +19,14 @@ final class ArtifactBuilder
     private $output;
 
     /**
-     * @var ArtifactFilesystem The filesystem
+     * @var FilesystemInterface The filesystem
      */
     private $filesystem;
+
+    /**
+     * @var ZipFileInterface
+     */
+    private $zipFile;
 
     /**
      * @var array File set to delete
@@ -74,7 +81,7 @@ final class ArtifactBuilder
         '\/?package\.json$',
         '\/?package\-lock\.json$',
         '\/?tsconfig\.json$',
-        // Direcotries
+        // Directories
         '\/?test$',
         '\/?tester$',
         '\/?docs$',
@@ -87,14 +94,17 @@ final class ArtifactBuilder
      * The constructor.
      *
      * @param OutputInterface $output The output
-     * @param ArtifactFilesystem $filesystem The filesystem
+     * @param FilesystemInterface $filesystem The filesystem
+     * @param ZipFileInterface $zipFile The ZIP file helper
      */
     public function __construct(
         OutputInterface $output,
-        ArtifactFilesystem $filesystem
+        FilesystemInterface $filesystem,
+        ZipFileInterface $zipFile
     ) {
         $this->output = $output;
         $this->filesystem = $filesystem;
+        $this->zipFile = $zipFile;
     }
 
     /**
@@ -126,38 +136,19 @@ final class ArtifactBuilder
         chdir($baseDir);
 
         // Get composer.phar
-        $composerPhar = sprintf('%s/composer.phar', $buildDir);
-
-        if (file_exists($composerPhar)) {
-            $this->output->writeln("Destination already exists (skipping): $composerPhar");
-        } else {
-            $this->output->writeln("Download composer to: $composerPhar");
-            file_put_contents($composerPhar, file_get_contents('https://getcomposer.org/composer.phar'));
-        }
+        $this->downloadComposer($buildDir);
 
         $this->output->writeln("Delete build/master: $masterDir");
         $this->filesystem->removeDirectory($masterDir);
 
         $this->output->writeln('Get master branch from git repository');
-        exec("git archive --format zip --output $masterZip master", $output, $status);
-
-        if ($status > 0) {
-            throw new RuntimeException(sprintf('Download of the master branch failed. Error code: %s', $status));
-        }
-
-        if (!file_exists($masterZip)) {
-            throw new RuntimeException(sprintf('File not found: %s', $masterZip));
-        }
+        $this->getMasterArchive($masterZip);
 
         $this->output->writeln('Unzip master branch');
-        $this->filesystem->unzip($masterZip, $masterDir);
+        $this->zipFile->extractToDirectory($masterZip, $masterDir);
 
         $this->output->writeln('Install composer packages');
-        exec("php $buildDir/composer.phar install --no-dev --optimize-autoloader -d $masterDir", $output, $status);
-
-        if ($status > 0) {
-            throw new RuntimeException(sprintf('The composer package installation failed. Error code: %s', $status));
-        }
+        $this->installComposerPackages($buildDir, $masterDir);
 
         $this->output->writeln('Delete master.zip');
         $this->filesystem->deleteFile($masterZip);
@@ -167,13 +158,72 @@ final class ArtifactBuilder
 
         // Zip master brunch
         $this->output->writeln("Create zip file: $zipFile");
+        $this->zipFile->createFromDirectory($masterDir, $zipFile);
 
-        $this->filesystem->zipDirectory($masterDir, $zipFile);
-
+        $this->output->writeln("Remove directory: $masterDir");
         $this->filesystem->removeDirectory($masterDir);
 
         $this->output->writeln('<fg=green>Done</>');
 
         chdir($currentDir);
+    }
+
+    /**
+     * Download composer phar.
+     *
+     * @param string $buildDir The destination directory
+     *
+     * @return void
+     */
+    private function downloadComposer(string $buildDir)
+    {
+        // Get composer.phar
+        $composerPhar = sprintf('%s/composer.phar', $buildDir);
+
+        if (file_exists($composerPhar)) {
+            $this->output->writeln("Destination already exists (skipping): $composerPhar");
+        } else {
+            $this->output->writeln("Download composer to: $composerPhar");
+            file_put_contents($composerPhar, file_get_contents('https://getcomposer.org/composer.phar'));
+        }
+    }
+
+    /**
+     * Get master archive.
+     *
+     * @param string $masterZip The destination zip file
+     *
+     * @throws RuntimeException
+     *
+     * @return void
+     */
+    private function getMasterArchive(string $masterZip)
+    {
+        exec("git archive --format zip --output $masterZip master", $output, $status);
+
+        if ($status > 0) {
+            throw new RuntimeException(sprintf('Download of the master branch failed. Error code: %s', $status));
+        }
+
+        if (!file_exists($masterZip)) {
+            throw new RuntimeException(sprintf('File not found: %s', $masterZip));
+        }
+    }
+
+    /**
+     * Install composer packages.
+     *
+     * @param string $buildDir The build directory
+     * @param string $masterDir The master directory
+     *
+     * @return void
+     */
+    private function installComposerPackages(string $buildDir, string $masterDir)
+    {
+        exec("php $buildDir/composer.phar install --no-dev --optimize-autoloader -d $masterDir", $output, $status);
+
+        if ($status > 0) {
+            throw new RuntimeException(sprintf('The composer package installation failed. Error code: %s', $status));
+        }
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Selective\Artifact\Builder;
+namespace Selective\Artifact\Filesystem;
 
 use DirectoryIterator;
 use FilesystemIterator;
@@ -8,12 +8,11 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
 use SplFileInfo;
-use ZipArchive;
 
 /**
- * Artifact Filesystem.
+ * Local filesystem.
  */
-class ArtifactFilesystem
+class LocalFilesystem implements FilesystemInterface
 {
     /**
      * Normalize path.
@@ -116,56 +115,6 @@ class ArtifactFilesystem
         }
 
         return $files;
-    }
-
-    /**
-     * Zip directory.
-     *
-     * @param string $path The path to zip
-     * @param string $zipFile The destination ZIP file
-     *
-     * @return void
-     */
-    public function zipDirectory(string $path, string $zipFile)
-    {
-        $zip = new ZipArchive();
-        $zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path));
-
-        /** @var SplFileInfo $file */
-        foreach ($files as $name => $file) {
-            if ($file->isDir()) {
-                continue;
-            }
-
-            $filePath = (string)$file->getRealPath();
-            $relativePath = (string)substr($filePath, strlen($path) + 1);
-
-            $zip->addFile($filePath, $relativePath);
-        }
-
-        $zip->close();
-    }
-
-    /**
-     * Unzip file.
-     *
-     * @param string $zipFile The source zip file
-     * @param string $destination The destination path
-     *
-     * @throws RuntimeException
-     *
-     * @return void
-     */
-    public function unzip(string $zipFile, string $destination)
-    {
-        $zip = new ZipArchive();
-        if ($zip->open($zipFile) === true) {
-            $zip->extractTo($destination);
-            $zip->close();
-        } else {
-            throw new RuntimeException(sprintf('Unzip failed: %s', $zipFile));
-        }
     }
 
     /**
