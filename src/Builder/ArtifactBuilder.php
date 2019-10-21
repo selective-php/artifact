@@ -4,7 +4,7 @@ namespace Selective\Artifact\Builder;
 
 use Selective\Artifact\Compression\ZipFileInterface;
 use Selective\Artifact\Filesystem\FilesystemInterface;
-use Selective\Artifact\Utility\ArtifactException;
+use Selective\Artifact\Exception\ArtifactException;
 use Selective\Artifact\Utility\TextFormatter;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -252,7 +252,7 @@ final class ArtifactBuilder
             return '';
         }
 
-        $composerConfig = json_decode(file_get_contents($composerFile), false);
+        $composerConfig = json_decode((string)file_get_contents($composerFile), false);
 
         return $composerConfig->version ?? '';
     }

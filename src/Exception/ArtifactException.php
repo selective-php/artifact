@@ -1,6 +1,6 @@
 <?php
 
-namespace Selective\Artifact\Utility;
+namespace Selective\Artifact\Exception;
 
 use RuntimeException;
 
