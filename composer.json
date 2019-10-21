@@ -17,7 +17,8 @@
     "require": {
         "php": "^7.1",
         "symfony/console": "^2.8|^3.0|^4.0",
-        "ext-zip": "*"
+        "ext-zip": "*",
+        "ext-json": "*"
     },
     "require-dev": {
         "overtrue/phplint": "^1.1",

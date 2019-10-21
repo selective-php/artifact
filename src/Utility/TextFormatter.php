@@ -23,4 +23,23 @@ final class TextFormatter
 
         return mb_strtolower((string)preg_replace('/(?<=\\w)([A-Z])/', $delimiter . '\\1', $string));
     }
+
+    /**
+     * Returns the given string as an underscored_string.
+     *
+     * Also replaces dashes with underscores.
+     *
+     * @param string $version The version
+     *
+     * @return string The underscore_version of the input string
+     */
+    public static function flatVersion(string $version): string
+    {
+        $numbers = '';
+        foreach (explode('.', $version) as $number) {
+            $numbers .= str_pad($number, 2, '0', STR_PAD_LEFT);
+        }
+
+        return $numbers;
+    }
 }

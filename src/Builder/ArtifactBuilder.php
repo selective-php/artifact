@@ -2,9 +2,9 @@
 
 namespace Selective\Artifact\Builder;
 
-use RuntimeException;
 use Selective\Artifact\Compression\ZipFileInterface;
 use Selective\Artifact\Filesystem\FilesystemInterface;
+use Selective\Artifact\Utility\ArtifactException;
 use Selective\Artifact\Utility\TextFormatter;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -121,7 +121,6 @@ final class ArtifactBuilder
         $baseDir = $this->filesystem->normalizePath($currentDir);
         $buildDir = $this->filesystem->normalizePath(sprintf('%s/build', $baseDir));
         $masterDir = $this->filesystem->normalizePath(sprintf('%s/master', $buildDir));
-        $zipFile = $this->filesystem->normalizePath(sprintf('%s/%s_%s.zip', $buildDir, $name, date('YmdHis')));
         $masterZip = "$buildDir/master.zip";
 
         $this->filesystem->createDirectory($buildDir);
@@ -131,7 +130,7 @@ final class ArtifactBuilder
         $this->output->writeln(sprintf('<info>Base directory</info> %s', $baseDir));
         $this->output->writeln(sprintf('<info>Build directory</info> %s', $buildDir));
         $this->output->writeln(sprintf('<info>Master directory</info> %s', $masterDir));
-        $this->output->writeln(sprintf('<info>Artifact file</info> %s', $zipFile));
+
 
         chdir($baseDir);
 
@@ -147,6 +146,15 @@ final class ArtifactBuilder
         $this->output->writeln('Unzip master branch');
         $this->zipFile->extractToDirectory($masterZip, $masterDir);
 
+        $version = $this->findVersion($masterDir);
+        $zipFilePath = $this->filesystem->normalizePath(sprintf(
+            '%s/%s_%s_%s.zip',
+            $buildDir,
+            $name,
+            TextFormatter::flatVersion($version ?: '0.0.0'),
+            date('YmdHis')
+        ));
+
         $this->output->writeln('Install composer packages');
         $this->installComposerPackages($buildDir, $masterDir);
 
@@ -157,12 +165,13 @@ final class ArtifactBuilder
         $this->filesystem->deleteFileset($masterDir, $this->fileset);
 
         // Zip master brunch
-        $this->output->writeln("Create zip file: $zipFile");
-        $this->zipFile->createFromDirectory($masterDir, $zipFile);
+        $this->output->writeln("Create zip file: $zipFilePath");
+        $this->zipFile->createFromDirectory($masterDir, $zipFilePath);
 
         $this->output->writeln("Remove directory: $masterDir");
         $this->filesystem->removeDirectory($masterDir);
 
+        $this->output->writeln(sprintf('<info>Artifact file</info> %s', $zipFilePath));
         $this->output->writeln('<fg=green>Done</>');
 
         chdir($currentDir);
@@ -193,7 +202,7 @@ final class ArtifactBuilder
      *
      * @param string $masterZip The destination zip file
      *
-     * @throws RuntimeException
+     * @throws ArtifactException
      *
      * @return void
      */
@@ -202,11 +211,11 @@ final class ArtifactBuilder
         exec("git archive --format zip --output $masterZip master", $output, $status);
 
         if ($status > 0) {
-            throw new RuntimeException(sprintf('Download of the master branch failed. Error code: %s', $status));
+            throw new ArtifactException(sprintf('Download of the master branch failed. Error code: %s', $status));
         }
 
         if (!file_exists($masterZip)) {
-            throw new RuntimeException(sprintf('File not found: %s', $masterZip));
+            throw new ArtifactException(sprintf('File not found: %s', $masterZip));
         }
     }
 
@@ -216,6 +225,8 @@ final class ArtifactBuilder
      * @param string $buildDir The build directory
      * @param string $masterDir The master directory
      *
+     * @throws ArtifactException
+     *
      * @return void
      */
     private function installComposerPackages(string $buildDir, string $masterDir)
@@ -223,7 +234,27 @@ final class ArtifactBuilder
         exec("php $buildDir/composer.phar install --no-dev --optimize-autoloader -d $masterDir", $output, $status);
 
         if ($status > 0) {
-            throw new RuntimeException(sprintf('The composer package installation failed. Error code: %s', $status));
+            throw new ArtifactException(sprintf('The composer package installation failed. Error code: %s', $status));
         }
+    }
+
+    /**
+     * Find application version.
+     *
+     * @param string $masterDir The master directory
+     *
+     * @return string The version
+     */
+    private function findVersion(string $masterDir): string
+    {
+        $composerFile = sprintf('%s/composer.json', $masterDir);
+
+        if (!file_exists($composerFile)) {
+            return '';
+        }
+
+        $composerConfig = json_decode(file_get_contents($composerFile), false);
+
+        return $composerConfig->version ?? '';
     }
 }
