@@ -131,7 +131,6 @@ final class ArtifactBuilder
         $this->output->writeln(sprintf('<info>Build directory</info> %s', $buildDir));
         $this->output->writeln(sprintf('<info>Master directory</info> %s', $masterDir));
 
-
         chdir($baseDir);
 
         // Get composer.phar

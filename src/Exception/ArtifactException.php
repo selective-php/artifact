@@ -5,9 +5,8 @@ namespace Selective\Artifact\Utility;
 use RuntimeException;
 
 /**
- * Artifact Exception
+ * Artifact Exception.
  */
 final class ArtifactException extends RuntimeException
 {
-
 }

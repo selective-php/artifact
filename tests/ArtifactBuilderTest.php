@@ -68,7 +68,7 @@ class ArtifactBuilderTest extends TestCase
     }
 
     /**
-     * Tear down
+     * Tear down.
      *
      * @return void
      */
