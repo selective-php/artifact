@@ -36,6 +36,10 @@ class ArtifactBuilderTest extends TestCase
      */
     public function setUp()
     {
+        if (!file_exists($this->temp)) {
+            mkdir($this->temp);
+        }
+
         $exec = static function ($command, $output, &$status) {
             $status = 0;
 
@@ -88,10 +92,7 @@ class ArtifactBuilderTest extends TestCase
         $filesystem->removeDirectory($this->temp);
         $filesystem->createDirectory($this->temp);
 
-        $zipFile = new ZipFile();
-        $builder = new ArtifactBuilder($this->output, $filesystem, $zipFile);
-
-        return $builder;
+        return new ArtifactBuilder($this->output, $filesystem, new ZipFile());
     }
 
     /**
