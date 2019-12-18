@@ -40,15 +40,29 @@ final class ZipFile implements ZipFileInterface
         $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($sourceDirectoryName));
 
         /** @var SplFileInfo $file */
-        foreach ($files as $name => $file) {
-            if ($file->isDir()) {
+        foreach ($files as $file) {
+            $fileName = $file->getFilename();
+
+            if ($fileName === '..') {
                 continue;
             }
 
-            $filePath = (string)$file->getRealPath();
-            $relativePath = (string)substr($filePath, strlen($sourceDirectoryName) + 1);
+            $realPath = str_replace('\\', '/', (string)$file->getRealPath());
 
-            $zip->addFile($filePath, $relativePath);
+            if ($file->isDir()) {
+                $dirName = str_replace($sourceDirectoryName . '/', '', $realPath . '/');
+
+                if ($dirName === '' || $dirName === '/') {
+                    continue;
+                }
+
+                $zip->addEmptyDir($dirName);
+
+                continue;
+            }
+
+            $dirName = str_replace($sourceDirectoryName . '/', '', $realPath);
+            $zip->addFile($realPath, $dirName);
         }
 
         $zip->close();
