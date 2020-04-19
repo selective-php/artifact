@@ -67,6 +67,7 @@ composer test
 ## Similar tools
 
 * [Apache Ant](https://ant.apache.org/)
+* [Phing](https://github.com/phingofficial/phing)
 
 ## License
 
